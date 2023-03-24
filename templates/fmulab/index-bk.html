@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+{% load static %}
+
+<link rel="stylesheet" href="{% static 'fmulab/style.css' %}">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Virtual lab - FMU tutorials</title>
+</head>
+
+<body>
+
+<div>
+    <form action="{% url 'fmulab:dashboard' %}" method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" value="Submit">
+    </form>
+</div>
+</body>
+</html>
+
+
