@@ -1,0 +1,31 @@
+<!-- templates/models/home.html -->
+{% extends '../base.html' %}
+
+{% block title %}Models{% endblock %}
+
+{% block modelslink %}active{% endblock %}
+
+{% block content %}
+
+	<div class="col-md-12">
+		<a href="/models"><button type="button" class="btn active btn-primary">Models</button></a>
+		{% for exp in exp_list %}
+		<a href="{% url 'models:detail' exp.exp_num %}"><button type="button" class="btn btn-primary">{{ exp.exp_title }}</button></a>
+		{% endfor %}
+		<!--
+		<a href="/models/growth"><button type="button" class="btn btn-primary">Growth</button></a>
+		<a href="/models/watertreatment"><button type="button" class="btn btn-primary">Watertreatment</button></a>
+		<a href="/models/behaviour"><button type="button" class="btn btn-primary">Behaviour</button></a>
+		<a href="/models/behaviour_growth"><button type="button" class="btn btn-primary">Behaviour-Growth</button></a>
+		<a href="/models/watertreatment_behaviour"><button type="button" class="btn btn-primary">Watertreatment-Behaviour</button></a>
+		-->
+		<!-- a href="/models/howto"><button type="button" class="btn btn-primary">How to simulate</button></a -->
+		<hr>
+		<H2>{{ experiment.exp_title }}</H2>
+		<p>{{ experiment.exp_desc }}</p>
+
+		<H2>Downloads</H2>
+
+	</div>
+
+{% endblock %}

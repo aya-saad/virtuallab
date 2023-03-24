@@ -1,0 +1,44 @@
+<!-- templates/models/home.html -->
+{% extends './base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block homelink %}active{% endblock %}
+
+{% block content %}
+
+	<div class="col-md-12">
+		<a href="/models"><button type="button" class="btn active btn-primary">Models</button></a>
+		<a href="/models/growth"><button type="button" class="btn btn-primary">Growth</button></a>
+		<a href="/models/watertreatment"><button type="button" class="btn btn-primary">Watertreatment</button></a>
+		<a href="/models/behaviour"><button type="button" class="btn btn-primary">Behaviour</button></a>
+		<a href="/models/behaviour_growth"><button type="button" class="btn btn-primary">Behaviour-Growth</button></a>
+		<a href="/models/watertreatment_behaviour"><button type="button" class="btn btn-primary">Watertreatment-Behaviour</button></a>
+		<!-- a href="/models/howto"><button type="button" class="btn btn-primary">How to simulate</button></a -->
+		<hr>
+		<H2>Models</H2>
+		<p>This is the overview page for the models currently implemented in the virtual laboratory. At present there are three submodels implemented:
+		<li>A model on <a href="/models/watertreatment">watertreatment</a>.</li>
+		<li>A model on <a href="/models/growth">fish growth</a>.</li>
+		<li>A model on <a href="/models/hydro">hydrodynamic flow fields</a>.</li>
+		<p>In addition there is a Reporter FMU that takes input from all the submodels and writes the results to the database so the results are available later.</p>
+		
+		<H2>Configurations</H2>
+		<p>The Virtual Laboratory has three main ways of configuring the four available FMUs depending on the user's choice of infrastructure for the experiment. </p>
+
+		<p>In the first configuration the user has chosen a presimulated tank for the experiment. The growth FMU delivers data to the watertreatment model and the reporter, and the watertreatment and flow FMUs delivers data directly to the reporter. This setup will lock certain input parameters in the watertreatment model, since changing them would result in a different flow than the presimulated one. These parameters will be removed from the user interface, so they are not changed in the experiment setup.</p>
+
+		<img src="/static/img/ConfigurationA.jpg" alt="Configuration A">
+
+		<p>In the second configuration the user has chosen a custom tank. Since the flow model is depending on presimulating tanks due to processing capabilities, this disconnects the flow FMU from the setup, but otherwise it remains the same as in configuration A.</p>
+
+		<img src="/static/img/ConfigurationB.jpg" alt="Configuration B">
+
+		<p>In the third configuration the user has chosen a netcage as the infrastructure. Since the watertreatment is only necessary for tank simulations, it is disconnected from the simulation, and the growth and flow FMUs run in parallel, delivering data to the reporter FMU.</p>
+
+		<img src="/static/img/ConfigurationC.jpg" alt="Configuration C">
+
+
+	</div>
+
+{% endblock %}

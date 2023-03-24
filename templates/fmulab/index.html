@@ -1,0 +1,59 @@
+<!-- templates/models/home.html -->
+{% extends '../base.html' %}
+
+{% block title %}Simulate{% endblock %}
+
+{% block simulatelink %}active{% endblock %}
+
+{% block content %}
+
+<div class="col-md-12">
+		<a href="/models"><button type="button" class="btn active btn-primary">Models</button></a>
+		{% for exp in exp_list %}
+		<a href="{% url 'models:detail' exp.exp_num %}"><button type="button" class="btn btn-primary">{{ exp.exp_title }}</button></a>
+		{% endfor %}
+    	<hr>
+
+    {% load widget_tweaks %}
+    <form action="{% url 'fmulab:dashboard' %}" method="post">
+        {% csrf_token %}
+        {% for field in form.visible_fields %}
+        <div class="form-group">
+            <!-- {{ form.as_p }} -->
+            <div class="form-group">
+                <div class="row">
+                    <div class="col-md-2">
+                        {{ field.label_tag }}
+                    </div>
+
+                    <div class="col-md-7">
+                        {% if form.is_bound %}
+                            {% if field.errors %}
+                                {% render_field field class="form-control is-invalid" %}
+                                {% for error in field.errors %}
+                                <div class="invalid-feedback">
+                                    {{ error }}
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                {% render_field field class="form-control is-valid" %}
+                            {% endif %}
+                        {% else %}
+                            {% render_field field class="form-control" %}
+                        {% endif %}
+			  	  </div>
+
+                </div>
+
+        </div>
+        {% endfor %}
+        <!-- p><button type="submit" class="save btn btn-default">Save</button></p -->
+
+            <div class="col-md-9">
+                <input type="submit" value="Submit" class="submit btn-block btn-default offset-1">
+            </div>
+    </form>
+</div>
+{% endblock %}
+
+
