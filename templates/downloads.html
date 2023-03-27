@@ -23,7 +23,7 @@
 		<H2>{{d.download_title}}</H2>
 		<a href="{{ d.download_link }}">{{ d.download_link }}</a>
 
-		{{d.download_desc}}
+		{{d.download_desc | safe }}
 
 		{% endfor %}
 
