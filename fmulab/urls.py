@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views_updated as views
+from . import views as views
 
 app_name = 'fmulab'
 
