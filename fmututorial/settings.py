@@ -20,7 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = ""
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -133,13 +133,11 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Graph LLM Settings
 NEO4J_URI = "neo4j+s://ff2d3c4d.databases.neo4j.io"
 NEO4J_USERNAME = "neo4j"
-NEO4J_PASSWORD = ""
 NEO4J_DATABASE = "neo4j"
 ENABLE_USER_AGENT = True
 NEO4J_USER_AGENT = "AuraDB/Python"
 
 LLM_PROVIDER = "openai"
-OPENAI_API_KEY = ""
 OPENAI_MODEL = "gpt-3.5-turbo"
 MAX_TOKENS = 1000
 TEMPERATURE = 0.0
