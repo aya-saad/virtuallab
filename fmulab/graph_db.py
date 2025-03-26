@@ -13,35 +13,39 @@ class Neo4jConnection:
         """
         Initialize the Neo4j connection with credentials
         """
-        self.uri = uri or os.environ.get("NEO4J_URI", "bolt://localhost:7687")
-        self.username = username or os.environ.get("NEO4J_USERNAME", "neo4j")
-        self.password = password or os.environ.get("NEO4J_PASSWORD", "password")
-        self.database = database
+        from django.conf import settings
+        self.uri = uri if uri is not None else settings.NEO4J_URI
+        self.username = username if username is not None else settings.NEO4J_USERNAME
+        self.password = password if password is not None else settings.NEO4J_PASSWORD
+        self.database = database if database is not None else settings.NEO4J_DATABASE
+
+        self.enable_user_agent = getattr(settings, "ENABLE_USER_AGENT", False)
+        self.user_agent = getattr(settings, "NEO4J_USER_AGENT", None)
+
+        # For debugging
+        logging.info(f"Neo4jConnection initialized with URI: {self.uri}")
+        logging.info(f"Using username: {self.username}")
+        logging.info(f"Using database: {self.database}")
         self.driver = None
 
     def connect(self):
         """
         Creates and returns a Neo4j database driver instance configured for Aura if needed
-
-        Returns:
-        Neo4j.Driver: A driver object for interacting with the Neo4j database.
         """
         try:
             # Clean up URI - important for Aura connections
             uri = self.uri.strip()
             logging.info(f"Attempting to connect to the Neo4j database at {uri}")
-
-            # Check if user agent should be enabled (for Aura or other services)
-            enable_user_agent = os.environ.get("ENABLE_USER_AGENT", "False").lower() in ("true", "1", "yes")
-            logging.info(f"enable_user_agent: {enable_user_agent}")
+            logging.info(f"Using username: {self.username}")
+            logging.info(f"Using database: {self.database}")
 
             # Create the driver with appropriate settings
-            if enable_user_agent:
+            if self.enable_user_agent and self.user_agent:
                 self.driver = GraphDatabase.driver(
                     uri,
                     auth=(self.username, self.password),
                     database=self.database,
-                    user_agent=os.environ.get('NEO4J_USER_AGENT')
+                    user_agent=self.user_agent
                 )
             else:
                 self.driver = GraphDatabase.driver(

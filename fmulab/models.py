@@ -48,7 +48,7 @@ class FMUForm(forms.Form):
     )
 
 
-class GraphLLMModel(models.Model):
+class FMUModel(models.Model):
     """
     Model for storing FMU simulations
     """

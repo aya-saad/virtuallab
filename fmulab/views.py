@@ -13,7 +13,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
 
 from models.models import Experiment
-from .models_updated import FMUForm, ChatSession, ChatMessage
+from .models import FMUForm, ChatSession, ChatMessage
 from .graph_db import Neo4jConnection
 from .llm_integration import get_llm_provider
 from .qa_integration import QAIntegration
@@ -27,10 +27,13 @@ def get_qa_pipeline():
     """Get or initialize the QA pipeline"""
     global qa_pipeline
     if qa_pipeline is None:
+        from django.conf import settings
+
         neo4j_conn = Neo4jConnection(
-            uri=os.environ.get("NEO4J_URI", "bolt://localhost:7687"),
-            username=os.environ.get("NEO4J_USERNAME", "neo4j"),
-            password=os.environ.get("NEO4J_PASSWORD", "password")
+            uri=settings.NEO4J_URI,
+            username=settings.NEO4J_USERNAME,
+            password=settings.NEO4J_PASSWORD,
+            database=settings.NEO4J_DATABASE
         )
         neo4j_conn.connect()
         llm_provider = get_llm_provider(
