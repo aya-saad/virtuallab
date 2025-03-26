@@ -31,7 +31,19 @@ class QAIntegration:
 
     def __init__(self, neo4j_connection=None, llm_provider=None):
         """Initialize the QA pipeline"""
-        self.neo4j = neo4j_connection or Neo4jConnection()
+        from django.conf import settings
+
+        if neo4j_connection is None:
+            # Explicitly pass the settings from Django
+            self.neo4j = Neo4jConnection(
+                uri=settings.NEO4J_URI,
+                username=settings.NEO4J_USERNAME,
+                password=settings.NEO4J_PASSWORD,
+                database=settings.NEO4J_DATABASE
+            )
+        else:
+            self.neo4j = neo4j_connection
+
         if not self.neo4j.driver:
             self.neo4j.connect()
 
