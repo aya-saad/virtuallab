@@ -15,6 +15,25 @@
     	<hr>
 
     {% load widget_tweaks %}
+
+    <h2>FMU Simulation Assistant</h2>
+    <p>Ask questions about FMU simulations and get answers based on our knowledge base.</p>
+
+    <!-- Chat History -->
+    <div class="chat-container" id="chat-container">
+        {% if chat_history %}
+            {% for message in chat_history %}
+                <div class="chat-message {% if message.role == 'user' %}user-message{% else %}assistant-message{% endif %}">
+                    <div class="message-content">{{ message.content|linebreaksbr }}</div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="chat-message assistant-message">
+                <div class="message-content">Hello! I'm your FMU simulation assistant. How can I help you today?</div>
+            </div>
+        {% endif %}
+    </div>
+
     <form action="{% url 'fmulab:dashboard' %}" method="post">
         {% csrf_token %}
         {% for field in form.visible_fields %}
@@ -54,6 +73,53 @@
             </div>
     </form>
 </div>
+
+<style>
+    .chat-container {
+        height: 400px;
+        overflow-y: auto;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 20px;
+        background-color: #f9f9f9;
+    }
+
+    .chat-message {
+        margin-bottom: 15px;
+        padding: 10px 15px;
+        border-radius: 10px;
+        max-width: 80%;
+    }
+
+    .user-message {
+        background-color: #dcf8c6;
+        margin-left: auto;
+    }
+
+    .assistant-message {
+        background-color: #ffffff;
+        margin-right: auto;
+    }
+
+    .chat-form {
+        margin-top: 20px;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+    }
+</style>
+
+<script>
+    // Scroll to bottom of chat history when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        var chatContainer = document.getElementById('chat-container');
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    });
+</script>
 {% endblock %}
 
 

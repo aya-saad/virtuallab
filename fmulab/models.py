@@ -27,25 +27,7 @@ class FMUForm(forms.Form):
     exp_title = forms.CharField(widget=forms.HiddenInput(), required=False)
     exp_num = forms.CharField(widget=forms.HiddenInput(), required=False)
 
-    # New fields for Graph LLM integration
-    document_selector = forms.MultipleChoiceField(
-        required=False,
-        widget=forms.CheckboxSelectMultiple,
-        label="Select documents to search (optional)",
-        choices=[]  # Will be populated dynamically in the view
-    )
 
-    chat_mode = forms.ChoiceField(
-        required=False,
-        widget=forms.RadioSelect,
-        label="Search mode",
-        choices=[
-            ('vector', 'Text Search'),
-            ('graph', 'Graph Search'),
-            ('entity', 'Entity Search'),
-        ],
-        initial='graph'
-    )
 
 
 class FMUModel(models.Model):

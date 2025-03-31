@@ -2,28 +2,41 @@
 QA Integration module for connecting Neo4j with LLMs
 """
 import logging
+import re
 import json
 import os
 from datetime import datetime
 from .graph_db import Neo4jConnection
 from .llm_integration import get_llm_provider
 
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
 # Constants for prompt engineering
 SYSTEM_PROMPT = """
-You are an AI-powered question-answering agent. Your task is to provide accurate and comprehensive responses to user queries based on the given context and available resources.
+You are an FMU Simulation Assistant, specialized in aquaculture research and simulations. Your knowledge comes from a graph database that contains information about fish growth models, water treatment, hydrodynamic models, and more.
 
-### Response Guidelines:
-1. **Direct Answers**: Provide clear and thorough answers to the user's queries. Avoid speculative responses.
-2. **Use Context**: Use only the information from the context provided below.
-3. **Acknowledge Unknowns**: Clearly state if an answer is unknown. Do not make up information.
-4. **Keep Responses Concise**: Aim for clarity and completeness within 4-5 sentences unless more detail is needed.
-5. **Professional Tone**: Maintain a professional and informative tone. Be friendly and approachable.
+When answering questions, use the graph context provided below which includes:
+- Content from relevant documents
+- Entities (concepts, terms, components) from the knowledge graph
+- Relationships between these entities
 
-### Context:
+### Guidelines:
+1. Provide detailed, accurate answers based solely on the provided graph context.
+2. Explain connections between concepts when relevant.
+3. If the context contains different perspectives or approaches, summarize them.
+4. Be specific about what files or components you're referring to.
+5. If the graph context doesn't contain enough information, acknowledge this limitation.
+
+### Graph Context:
 {}
 
-IMPORTANT: DO NOT ANSWER FROM YOUR KNOWLEDGE BASE. USE ONLY THE CONTEXT PROVIDED.
+Remember: You have access to a rich knowledge graph about FMU simulations and aquaculture research. Use this specialized knowledge to provide helpful, accurate responses.
 """
+
 
 
 class QAIntegration:
@@ -81,7 +94,7 @@ class QAIntegration:
                 # If no documents specified, search all documents
                 search_query = """
                 MATCH (d:Document)<-[:PART_OF]-(c:Chunk)
-                WHERE c.text CONTAINS $query_text
+                WHERE toLower(c.text) CONTAINS toLower($query_text)
                 RETURN c
                 LIMIT $limit
                 """
@@ -111,6 +124,79 @@ class QAIntegration:
             logging.error(f"Error retrieving chunks: {str(e)}")
             return []
 
+    def retrieve_graph_context(self, query, document_names=None, limit=10):
+        """Retrieve relevant graph context from Neo4j based on query"""
+        try:
+            # Use a more sophisticated query that leverages the graph structure
+            # This query finds relevant chunks, then expands to include connected entities and their relationships
+            graph_query = """
+            // First find relevant chunks using vector similarity or text matching
+            MATCH (c:Chunk)
+            WHERE c.text CONTAINS $query_text OR EXISTS(c.embedding)
+            WITH c, CASE 
+                WHEN EXISTS(c.embedding) THEN 1.0 
+                ELSE apoc.text.similarity(c.text, $query_text) 
+            END AS relevance
+            ORDER BY relevance DESC
+            LIMIT $limit
+
+            // Get the documents these chunks belong to
+            MATCH (c)-[:PART_OF]->(d:Document)
+
+            // Expand to related entities
+            OPTIONAL MATCH path = (c)-[:HAS_ENTITY]->(e)
+
+            // Also get relationships between entities
+            OPTIONAL MATCH entity_rels = (e)-[r]-(other:__Entity__)
+
+            // Collect all the results
+            RETURN c.text AS chunk_text, 
+                   d.fileName AS source,
+                   collect(DISTINCT e.id) AS entities,
+                   collect(DISTINCT type(r) + ': ' + other.id) AS relationships
+            """
+
+            params = {
+                "query_text": query,
+                "limit": limit
+            }
+
+            if document_names:
+                graph_query = graph_query.replace(
+                    "MATCH (c:Chunk)",
+                    "MATCH (c:Chunk)-[:PART_OF]->(d:Document) WHERE d.fileName IN $document_names"
+                )
+                params["document_names"] = document_names
+
+            records, _, _ = self.neo4j.execute_query(graph_query, params)
+
+            # Process the results into a context format
+            context_parts = []
+
+            for record in records:
+                chunk_text = record["chunk_text"]
+                source = record["source"]
+                entities = record["entities"]
+                relationships = record["relationships"]
+
+                context_part = f"Source: {source}\n\nContent: {chunk_text}\n"
+
+                if entities:
+                    context_part += "\nEntities: " + ", ".join(entities)
+
+                if relationships:
+                    filtered_rels = [r for r in relationships if r is not None]
+                    if filtered_rels:
+                        context_part += "\nRelationships: " + ", ".join(filtered_rels)
+
+                context_parts.append(context_part)
+
+            return context_parts
+
+        except Exception as e:
+            logging.error(f"Error retrieving graph context: {str(e)}")
+            return []
+
     def get_chat_response(self, query, session_id=None, document_names=None):
         """Get a response to the user query"""
         try:
@@ -125,9 +211,12 @@ class QAIntegration:
             self.chat_history[session_id].append({"role": "user", "content": query})
 
             # Retrieve relevant chunks
-            chunks = self.retrieve_chunks(query, document_names)
+            # chunks = self.retrieve_chunks(query, document_names)
+            # Retrieve relevant graph context
+            context_parts = self.retrieve_graph_context(query, document_names)
 
-            if not chunks:
+            #if not chunks:
+            if not context_parts:
                 no_info_response = "I couldn't find any relevant information to answer your question."
                 self.chat_history[session_id].append({"role": "assistant", "content": no_info_response})
                 return {
@@ -137,19 +226,29 @@ class QAIntegration:
                 }
 
             # Format chunks into context
-            context = self._format_context_from_chunks(chunks)
+            #context = self._format_context_from_chunks(chunks)
+            # Format context for the prompt
+            context = "\n\n---\n\n".join(context_parts)
 
             # Generate the prompt with context
             prompt = SYSTEM_PROMPT.format(context) + f"\nQuestion: {query}"
 
             # Get response from LLM
+            logging.info(f"Sending prompt to LLM: {prompt[:200]}...")  # Log first 200 chars
             response = self.llm.generate(prompt)
+            logging.info(f"Received response from LLM: {response[:200]}...")  # Log first 200 chars
 
             # Add response to chat history
             self.chat_history[session_id].append({"role": "assistant", "content": response})
 
             # Extract sources for attribution
-            sources = list(set([chunk.get("source", "Unknown") for chunk in chunks]))
+            # sources = list(set([chunk.get("source", "Unknown") for chunk in chunks]))
+            sources = []
+            for part in context_parts:
+                source_match = re.search(r"Source: (.+?)\n", part)
+                if source_match and source_match.group(1) not in sources:
+                    sources.append(source_match.group(1))
+
 
             return {
                 "message": response,
@@ -158,7 +257,7 @@ class QAIntegration:
             }
 
         except Exception as e:
-            logging.error(f"Error in QA pipeline: {str(e)}")
+            logging.error(f"Error in QA pipeline: {str(e)}", exc_info=True)
             error_response = f"I'm sorry, but I encountered an error while processing your question: {str(e)}"
 
             if session_id in self.chat_history:

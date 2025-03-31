@@ -53,14 +53,14 @@ def index(request):
 
     # Get available documents for search
     qa = get_qa_pipeline()
-    available_documents = qa.get_documents()
+    all_documents = qa.get_documents()
 
     # Create document choices for the form
-    document_choices = [(doc, doc) for doc in available_documents]
+    document_choices = [(doc, doc) for doc in all_documents]
 
     # Initialize the form
     form = FMUForm()
-    form.fields['document_selector'].choices = document_choices
+    # form.fields['document_selector'].choices = document_choices
 
     # Get or create session for this user
     session_id = request.session.get('chat_session_id')
@@ -80,7 +80,7 @@ def index(request):
         'exp_list': exp_list,
         'form': form,
         'chat_history': chat_history,
-        'available_documents': available_documents,
+        'available_documents': all_documents,
         'chat_modes': CHAT_MODE_CONFIG_MAP
     }
 
@@ -102,8 +102,8 @@ def dashboard(request):
         if form.is_valid():
             # Extract the question and settings
             question = form.cleaned_data['exp_desc']
-            selected_documents = form.cleaned_data.get('document_selector', [])
-            chat_mode = form.cleaned_data.get('chat_mode', CHAT_DEFAULT_MODE)
+            # selected_documents = form.cleaned_data.get('document_selector', [])
+            # chat_mode = form.cleaned_data.get('chat_mode', CHAT_DEFAULT_MODE)
 
             # Get or create session for this user
             session_id = request.session.get('chat_session_id')
@@ -124,10 +124,12 @@ def dashboard(request):
 
                 # Get response from QA pipeline
                 qa = get_qa_pipeline()
+                # Get all available documents
+                all_documents = qa.get_documents()
                 response = qa.get_chat_response(
                     query=question,
                     session_id=session_id,
-                    document_names=selected_documents if selected_documents else None
+                    document_names=all_documents
                 )
 
                 # Save the assistant message
@@ -135,7 +137,7 @@ def dashboard(request):
                     session=chat_session,
                     role='assistant',
                     content=response['message'],
-                    sources=json.dumps(response.get('sources', []))
+                    #sources=json.dumps(response.get('sources', [])) # No need to store sources if we don't want to display them
                 )
 
                 # Redirect back to the chat interface
@@ -161,8 +163,8 @@ def chat_api(request):
             # Parse the request data
             data = json.loads(request.body)
             question = data.get('message', '')
-            selected_documents = data.get('documents', [])
-            chat_mode = data.get('mode', CHAT_DEFAULT_MODE)
+            # selected_documents = data.get('documents', [])
+            # chat_mode = data.get('mode', CHAT_DEFAULT_MODE)
 
             # Get or create session for this user
             session_id = request.session.get('chat_session_id')
@@ -172,10 +174,13 @@ def chat_api(request):
 
             # Get response from QA pipeline
             qa = get_qa_pipeline()
+            # Get all available documents
+            all_documents = qa.get_documents()
             response = qa.get_chat_response(
                 query=question,
                 session_id=session_id,
-                document_names=selected_documents if selected_documents else None
+                document_names=all_documents
+                # document_names=selected_documents if selected_documents else None
             )
 
             # Get or create the chat session
@@ -193,13 +198,13 @@ def chat_api(request):
                 session=chat_session,
                 role='assistant',
                 content=response['message'],
-                sources=json.dumps(response.get('sources', []))
+                # sources=json.dumps(response.get('sources', []))
             )
 
             # Return the response
             return JsonResponse({
                 'message': response['message'],
-                'sources': response.get('sources', []),
+                # 'sources': response.get('sources', []),
                 'session_id': session_id
             })
 
